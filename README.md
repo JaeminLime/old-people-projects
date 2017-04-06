@@ -1,2 +1,1 @@
-code for measuring angle and angular velocity. 
-
+senior project for the coolest cats in town
