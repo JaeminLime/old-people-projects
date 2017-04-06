@@ -58,6 +58,29 @@ float oldTime = 0;
 float newTime = 0;
 float angVelMain;
 float angVelMotor;
+float omega_initial = 0;
+float omega_final = 0;
+float omega_final_unfiltered = 0;
+float omega_inital_speed = 0;
+float omega_final_speed = 0;
+unsigned long time_prev = 0;
+unsigned long time_now = 0;
+double omega;
+#define omega_Filter 0.7
+#define omega_Speed_Filter 0.7
+#define angle_Rounding_Value 1000.
+
+void get_omega() {
+  time_prev = time_now;
+  time_now = micros();
+
+  omega_initial = omega_final;
+  omega_final_unfiltered = round((-ypr[2] * 180 / M_PI) * angle_Rounding_Value) / angle_Rounding_Value;
+  omega_final = (1 - omega_Filter) * (omega_final_unfiltered) + omega_Filter * (omega_initial);
+  omega_inital_speed = omega_final_speed;
+  omega_final_speed = ((1 - omega_Speed_Filter) * (omega_final - omega_initial) / (time_now - time_prev) * 1000000.) + omega_Speed_Filter * omega_inital_speed;
+}
+
 
 void flash(){
   setMotor(0);
@@ -137,17 +160,22 @@ void setup(){
 }
 
 void loop(){
-  
+  get_omega();
   getAngles();
   float seconds = micros()*0.000001;
+  Serial.print("time: ");
   Serial.print(seconds);
   Serial.print("\t");
+  Serial.print("roll: ");
   Serial.print(roll);
   Serial.print("\t");
+  Serial.print("counter: ");
   Serial.print(counter);
   Serial.print("\t");
-  Serial.print(angVelMain);
+  Serial.print("omega: ");
+  Serial.print(omega_final_speed);
   Serial.print("\t");
+  Serial.print("angVelMotor: ");
   Serial.println(angVelMotor);
    
 
@@ -246,5 +274,4 @@ void getAngVelMotor(){
   oldTime = newTime;
   oldThetaM = newThetaM;
 }
-
 
