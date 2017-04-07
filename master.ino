@@ -13,12 +13,7 @@ int set1 = 3;
 int set2 = 4;
 int enable = 5;
 
-// Accelerometer Declerations 
-// "OUTPUT_READABLE_YAWPITCHROLL" if you want to see the yaw/
-// pitch/roll angles (in degrees) calculated from the quaternions coming
-// from the FIFO. Note this also requires gravity vector calculations.
-// Also note that yaw/pitch/roll angles suffer from gimbal lock (for
-// more info, see: http://en.wikipedia.org/wiki/Gimbal_lock)
+
 #include <Wire.h>
 #include "I2Cdev.h"
 #include "MPU6050_6Axis_MotionApps20.h"
@@ -26,13 +21,12 @@ int enable = 5;
 MPU6050 mpu;
 #define OUTPUT_READABLE_YAWPITCHROLL
 // MPU control/status vars
-bool dmpReady = false;  // set true if DMP init was successful
-uint8_t mpuIntStatus;   // holds actual interrupt status byte from MPU
-uint8_t devStatus;      // return status after each device operation (0 = success, !0 = error)
-uint16_t packetSize;    // expected DMP packet size (default is 42 bytes)
-uint16_t fifoCount;     // count of all bytes currently in FIFO
-uint8_t fifoBuffer[64]; // FIFO storage buffer
-// orientation/motion vars
+bool dmpReady = false;  
+uint8_t mpuIntStatus;   
+uint8_t devStatus;      
+uint16_t packetSize;    
+uint16_t fifoCount;     
+uint8_t fifoBuffer[64]; 
 Quaternion q;           // [w, x, y, z]         quaternion container
 VectorInt16 aa;         // [x, y, z]            accel sensor measurements
 VectorInt16 aaReal;     // [x, y, z]            gravity-free accel sensor measurements
@@ -40,6 +34,7 @@ VectorInt16 aaWorld;    // [x, y, z]            world-frame accel sensor measure
 VectorFloat gravity;    // [x, y, z]            gravity vector
 float euler[3];         // [psi, theta, phi]    Euler angle container
 float ypr[3];           // [yaw, pitch, roll]   yaw/pitch/roll container and gravity vector
+
 // Interrupt Deteton Routine
 volatile bool mpuInterrupt = false;     // indicates whether MPU interrupt pin has gone high
 void dmpDataReady() {
@@ -82,11 +77,29 @@ void get_omega() {
 }
 
 
+float counter_initial = 0;
+float counter_final = 0;
+float counter_initial_speed = 0;
+float counter_final_speed = 0;
+
+void get_rpm(){
+  time_prev = time_now;
+  time_now = micros();
+
+  counter_initial = counter_final;
+  counter_final = counter;
+  counter_final_speed = counter_initial_speed;
+  counter_final_speed = ((counter_final - counter_initial) / ((time_now - time_prev)*0.000001));
+}
+
+
+
+
+
 void flash(){
   setMotor(0);
   getEncoder();
-  getAngVelMain();
-  getAngVelMotor();
+  
 }
 
 void setup(){
@@ -162,6 +175,7 @@ void setup(){
 void loop(){
   get_omega();
   getAngles();
+  get_rpm();
   float seconds = micros()*0.000001;
   Serial.print("time: ");
   Serial.print(seconds);
@@ -175,9 +189,8 @@ void loop(){
   Serial.print("omega: ");
   Serial.print(omega_final_speed);
   Serial.print("\t");
-  Serial.print("angVelMotor: ");
-  Serial.println(angVelMotor);
-   
+  Serial.print("RPM ");
+  Serial.println(counter_final_speed);
 
 }
 
@@ -253,25 +266,5 @@ void getEncoder(){
     }
   } 
   aLastState = aState; // Updates the previous state of the outputA with the current state
-}
-
-void getAngVelMain(){
-  newTime = seconds;
-  newTheta = roll;
-  if (newTime != oldTime){
-    angVelMain = (newTheta - oldTheta)/(newTime - oldTime);
-  }
-  oldTime = newTime;
-  oldTheta = newTheta;
-}
-
-void getAngVelMotor(){
-  newTime = seconds;
-  newThetaM = roll;
-  if (newTime != oldTime){
-    angVelMotor = (newThetaM - oldThetaM)/(newTime - oldTime);
-  }
-  oldTime = newTime;
-  oldThetaM = newThetaM;
 }
 
