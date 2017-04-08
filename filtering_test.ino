@@ -1,8 +1,9 @@
 //Filter declarations
 #include <MovingAverageFilter.h>
-MovingAverageFilter movingAverageFilter(10);
+MovingAverageFilter movingAverageFilter(100);
 float filtered_final_counter_speed = 0;
 float input = 0;
+float filtered_filter = 0;
 
 //Time Declerations
 #include <FlexiTimer2.h>
@@ -103,7 +104,7 @@ void get_rpm(){
 
 
 void flash(){
-  setMotor(0);
+  setMotor(100);
   getEncoder();
   
 }
@@ -197,13 +198,14 @@ void loop(){
   Serial.print(omega_final_speed);
   Serial.print("\t");
   Serial.print("RPM ");
-  Serial.println(filtered_final_counter_speed);
+  Serial.println(filtered_filter);
 
 }
 
 void filtering(){
   input = counter_final_speed;
   filtered_final_counter_speed = movingAverageFilter.process(input);
+  filtered_filter = movingAverageFilter.process(filtered_final_counter_speed);
 }
 
 
@@ -279,5 +281,4 @@ void getEncoder(){
   } 
   aLastState = aState; // Updates the previous state of the outputA with the current state
 }
-
 
